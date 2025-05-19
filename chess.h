@@ -1,6 +1,6 @@
 #pragma once
 #include "ANSIEsc.h"
-#include "Fen.h"
+#include "fen.h"
 #include "board.h"
 
 extern ANSI_ESC ansi;
