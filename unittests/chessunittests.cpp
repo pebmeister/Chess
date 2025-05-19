@@ -75,8 +75,8 @@ namespace move_unit_test
             }
 
             EXPECT_EQ(count, 0);
-            return count == 0;
         }
+        return count == 0;
     }
 
     TEST(pawn_unit_test, white_pawn_test_start)
