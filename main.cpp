@@ -6,8 +6,6 @@
 #include "chess.h"
 #include "fen.h"
 
-
-
 int main()
 {
     Board board;
@@ -38,8 +36,11 @@ int main()
 
         std::cout
             << ansi.pos(31, 11)
+            << ansi.gr(ansi.BLUE_BACKGROUND)
             << (board.turn == Color::White ? "White" : "Black")
-            <<  move.toString() << ansi.ERASE_IN_LINE;
+            << " " << move.toString() 
+            << ansi.gr(ansi.BLUE_BACKGROUND) 
+            << ansi.ERASE_IN_LINE;
 
         board.makeMove(move);
         printBoard(board, row, col, 4, 2);

@@ -8,6 +8,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 add_library(chesslib
     board.cpp
     engine.cpp
+    move.cpp
     ANSIEsc.h    
     bitboard.h
     board.h
@@ -15,6 +16,8 @@ add_library(chesslib
     chesstypes.h
     engine.h
     fen.h
+    move.h
+    squar.h
 )
 
 target_include_directories(chesslib PUBLIC

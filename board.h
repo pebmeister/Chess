@@ -4,62 +4,12 @@
 #include <string>
 #include <array>
 #include <stdint.h>
-
+#include "fen.h"
 #include "chesstypes.h"
 
-struct Square {
-    int x, y;
-    bool operator==(const Square& other) const { return x == other.x && y == other.y; }
-    const std::string toString() const
-    {
-        auto rank = (char)((char)x + 'A');
-        auto file = (char)((char)y + '1');
-        auto s = std::string("") + rank;
-        s += file;
-        return s;
-    }
-};
+#include "square.h"
+#include "move.h"
 
-enum class MoveType {
-    Normal,
-    Promotion,
-    EnPassant,
-    Castle,
-    Capture,
-};
-
-struct Move {
-public:
-    Square from;
-    Square to;
-    MoveType type = MoveType::Normal;
-    PieceType promotionType;
-    int score = 0;
-
-    Move(Square f, Square t, MoveType mt = MoveType::Normal, PieceType pt = PieceType::None)
-        : from(f), to(t), type(mt), promotionType(pt)
-    {
-    }
-
-    Move()
-    {
-        from = { -1, -1 };
-        to = { -1, -1 };
-        type = MoveType::Normal;
-        promotionType = PieceType::None;
-    }
-
-    std::string toString() const
-    {
-        std::string str;
-        str += (char)('a' + from.x);
-        str += (char)('8' - from.y);
-        str += type == MoveType::Capture || type == MoveType::EnPassant ? 'x' : '-';
-        str += (char)('a' + to.x);
-        str += (char)('8' - to.y);
-        return str;
-    }
-};
 
 class Board  {
 
@@ -117,8 +67,6 @@ private:
     };
 
     std::vector<Move> generatePawnMoves(Color side) const;
-    std::vector<Move> generateWhitePawnMoves() const;
-    std::vector<Move> generateBlackPawnMoves() const;
     std::vector<Move> generateKnightMoves(Color side) const;
     std::vector<Move> generateWhiteKnightMoves() const;
     std::vector<Move> generateBlackKnightMoves() const;
@@ -137,7 +85,7 @@ public:
     void reset();
 
     Color getTurn() const;
-    Piece get(int x, int y) const;
+    const Piece get(int x, int y) const;
     void makeMove(const Move& m);
     void undoMove();
     void loadFEN(std::string_view);

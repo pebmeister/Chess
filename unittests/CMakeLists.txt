@@ -28,7 +28,11 @@ if (${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Windows")
 endif()
 
 add_executable(unittest
-  chessunittests.cpp
+  fen.cpp
+  pawn.cpp
+  rook.cpp
+  utils.cpp
+  utils.h
 )
 
 # Link to both GTest and chesslib

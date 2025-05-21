@@ -47,8 +47,6 @@ std::string Board::toString() const
     return oss.str();
 }
 
-
-
 Board::Board(std::string fen)
 {
     moveHistory.clear();
@@ -82,7 +80,7 @@ bool Board::isInside(int x, int y) const
     return x >= 0 && x < 8 && y >= 0 && y < 8;
 }
 
-Piece Board::get(int x, int y) const
+const Piece Board::get(int x, int y) const
 {
     uint64_t mask = 1ULL << (y * 8 + x);
     Color color = Color::White;
@@ -431,13 +429,19 @@ std::vector<Move> Board::generateLegalMoves(Color side)
     std::vector<Move> legalMoves;
     auto pseudoMoves = generatePseudoLegalMoves(side);
 
-    auto temp = *this;
+    auto temp = *this; // inteded copy
+
     for (auto& m : pseudoMoves) {
         makeMove(m);
         if (!isInCheck(side))
             legalMoves.push_back(m);
         undoMove();
-        assert(*this == temp);
+        if (*this != temp) {
+            std::cout << "Undo FAIL Move " << m.toString() << "\n";
+            std::cout << "Before \n" << temp.toString() << "\nAfter Undo \n" << toString();
+
+            assert(*this == temp);
+        }
     }
     return legalMoves;
 }
@@ -458,9 +462,11 @@ std::vector<Move> Board::generateKingMoves(Color side) const
     // Normal king moves
     uint64_t targets = kingAttacks(kingBB) & ~ownPieces;
 
-    for (uint64_t bb = targets; bb; bb &= bb - 1) {
-        int toIndex = std::countr_zero(bb);
-        moves.emplace_back(indexToSquare(kingIndex), indexToSquare(toIndex));
+    if (targets != 0) {
+        for (uint64_t bb = targets; bb; bb &= bb - 1) {
+            int toIndex = std::countr_zero(bb);
+            moves.emplace_back(indexToSquare(kingIndex), indexToSquare(toIndex));
+        }
     }
 
     // Castling
@@ -498,8 +504,8 @@ std::vector<Move> Board::generateKingMoves(Color side) const
 
 uint64_t Board::kingAttacks(uint64_t kingBB) const
 {
-    const uint64_t notAFile = 0xfefefefefefefefeULL;
-    const uint64_t notHFile = 0x7f7f7f7f7f7f7f7fULL;
+    const uint64_t notAFile = ~FILE_A;
+    const uint64_t notHFile = ~FILE_H;
 
     uint64_t attacks = 0;
 
@@ -640,7 +646,7 @@ std::vector<Move> Board::generatePawnMoves(Color side) const
 {
     auto indexToSquare = [](int index) -> Square
         {
-            return Square{ index % 8, index / 8 };
+            return Square{ index % 8, 7 - index / 8 };
         };
 
     std::vector<Move> moves;
@@ -745,190 +751,6 @@ std::vector<Move> Board::generatePawnMoves(Color side) const
         int from = to - rightOffset;
         moves.emplace_back(indexToSquare(from), indexToSquare(to));
     }
-
-    return moves;
-}
-
-//std::vector<Move> Board::generatePawnMoves(Color side) const
-//{
-//    if (side == Color::White)
-//        return generateWhitePawnMoves();
-//    return generateBlackPawnMoves();
-//}
-//
-std::vector<Move> Board::generateWhitePawnMoves() const
-{
-    auto indexToSquare = [](int index) -> Square
-        {
-            return Square{ index % 8, index / 8 };
-        };
-
-    std::vector<Move> moves;
-    uint64_t empty = ~allPieces;
-
-    uint64_t singlePush = (white_pawns << 8) & empty;
-    uint64_t doublePush = ((white_pawns & RANK_2) << 8) & empty;
-    doublePush = (doublePush << 8) & empty;
-
-    uint64_t leftCapture = (white_pawns << 7) & blackPieces & ~FILE_H;
-    uint64_t rightCapture = (white_pawns << 9) & blackPieces & ~FILE_A;
-
-    // En passant targets
-    uint64_t ep = 0;
-    if (enPassantTarget.x >= 0 && enPassantTarget.y >= 0) {
-        ep = 1ULL << (enPassantTarget.y * 8 + enPassantTarget.x);
-    }
-
-    uint64_t epLeft = (white_pawns << 7) & ep & ~FILE_H;
-    uint64_t epRight = (white_pawns << 9) & ep & ~FILE_A;
-
-    for (uint64_t bb = singlePush; bb; bb &= bb - 1) {
-        int to = std::countr_zero(bb);
-        int from = to - 8;
-        Square fromSq = indexToSquare(from);
-        Square toSq = indexToSquare(to);
-
-        // Promotion
-        if (toSq.y == 7) {
-            moves.emplace_back(fromSq, toSq, MoveType::Promotion, PieceType::Queen);
-        }
-        else {
-            moves.emplace_back(fromSq, toSq);
-        }
-    }
-
-    for (uint64_t bb = doublePush; bb; bb &= bb - 1) {
-        int to = std::countr_zero(bb);
-        int from = to - 16;
-        moves.emplace_back(indexToSquare(from), indexToSquare(to));
-    }
-
-    for (uint64_t bb = leftCapture; bb; bb &= bb - 1) {
-        int to = std::countr_zero(bb);
-        int from = to - 7;
-        Square fromSq = indexToSquare(from);
-        Square toSq = indexToSquare(to);
-
-        if (toSq.y == 7) {
-            // Promotion capture
-            moves.emplace_back(fromSq, toSq, MoveType::Promotion, PieceType::Queen);
-        }
-        else {
-            moves.emplace_back(fromSq, toSq);
-        }
-    }
-
-    for (uint64_t bb = rightCapture; bb; bb &= bb - 1) {
-        int to = std::countr_zero(bb);
-        int from = to - 9;
-        Square fromSq = indexToSquare(from);
-        Square toSq = indexToSquare(to);
-
-        if (toSq.y == 7) {
-            // Promotion capture
-            moves.emplace_back(fromSq, toSq, MoveType::Promotion, PieceType::Queen);
-        }
-        else {
-            moves.emplace_back(fromSq, toSq);
-        }
-    }
-
-    // En passant captures
-    for (uint64_t bb = epLeft; bb; bb &= bb - 1) {
-        int to = std::countr_zero(bb);
-        int from = to - 7;
-        moves.emplace_back(indexToSquare(from), indexToSquare(to));
-    }
-    for (uint64_t bb = epRight; bb; bb &= bb - 1) {
-        int to = std::countr_zero(bb);
-        int from = to - 9;
-        moves.emplace_back(indexToSquare(from), indexToSquare(to));
-    }
-
-    return moves;
-}
-
-std::vector<Move> Board::generateBlackPawnMoves() const
-{
-    std::vector<Move> moves;
-    uint64_t empty = ~allPieces;
-
-    uint64_t singlePush = (black_pawns >> 8) & empty;
-    uint64_t doublePush = ((black_pawns & RANK_7) >> 8) & empty;
-    doublePush = (doublePush >> 8) & empty;
-
-    uint64_t leftCapture = (black_pawns >> 9) & whitePieces & ~FILE_H;
-    uint64_t rightCapture = (black_pawns >> 7) & whitePieces & ~FILE_A;
-
-    // En passant targets
-    uint64_t ep = 0;
-    if (enPassantTarget.x >= 0 && enPassantTarget.y >= 0) {
-        ep = 1ULL << (enPassantTarget.y * 8 + enPassantTarget.x);
-    }
-
-    uint64_t epLeft = (black_pawns >> 9) & ep & ~FILE_H;
-    uint64_t epRight = (black_pawns >> 7) & ep & ~FILE_A;
-
-    auto indexToSquare = [](int index) -> Square
-        {
-            return Square{ index % 8, index / 8 };
-        };
-
-    for (uint64_t bb = singlePush; bb; bb &= bb - 1) {
-        int to = std::countr_zero(bb);
-        int from = to + 8;
-        Square fromSq = indexToSquare(from);
-        Square toSq = indexToSquare(to);
-
-        if (toSq.y == 0) {
-            moves.emplace_back(fromSq, toSq, MoveType::Promotion, PieceType::Queen); // Promotion
-        }
-        else {
-            moves.emplace_back(fromSq, toSq);
-        }
-    }
-
-    for (uint64_t bb = doublePush; bb; bb &= bb - 1) {
-        int to = std::countr_zero(bb);
-        int from = to + 16;
-        moves.emplace_back(indexToSquare(from), indexToSquare(to));
-    }
-
-    for (uint64_t bb = leftCapture; bb; bb &= bb - 1) {
-        int to = std::countr_zero(bb);
-        int from = to + 9;
-        Square fromSq = indexToSquare(from);
-        Square toSq = indexToSquare(to);
-
-        if (toSq.y == 0) {
-            moves.emplace_back(fromSq, toSq, MoveType::Promotion, PieceType::Queen); // Promotion capture
-        }
-        else {
-            moves.emplace_back(fromSq, toSq);
-        }
-    }
-
-    for (uint64_t bb = rightCapture; bb; bb &= bb - 1) {
-        int to = std::countr_zero(bb);
-        int from = to + 7;
-        Square fromSq = indexToSquare(from);
-        Square toSq = indexToSquare(to);
-
-        if (toSq.y == 0) {
-            moves.emplace_back(fromSq, toSq, MoveType::Promotion, PieceType::Queen); // Promotion capture
-        }
-        else {
-            moves.emplace_back(fromSq, toSq);
-        }
-    }
-
-    // En passant captures
-    for (uint64_t bb = epLeft | epRight; bb; bb &= bb - 1) {
-        int to = std::countr_zero(bb);
-        int from = to + (bb & epLeft ? 9 : 7);
-        moves.emplace_back(indexToSquare(from), indexToSquare(to));
-    }
-
     return moves;
 }
 
@@ -951,8 +773,8 @@ std::vector<Move> Board::generatePseudoLegalMoves(Color side) const
     auto queenMoves = generateQueenMoves(side);
     moves.insert(moves.end(), queenMoves.begin(), queenMoves.end());
 
-//    auto kingMoves = generateKingMoves(side);
-//    moves.insert(moves.end(), kingMoves.begin(), kingMoves.end());
+    //auto kingMoves = generateKingMoves(side);
+    //moves.insert(moves.end(), kingMoves.begin(), kingMoves.end());
 
     return moves;
 }

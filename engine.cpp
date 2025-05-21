@@ -146,18 +146,18 @@ void printBoard(const Board& board, int row, int col, int squareWidth = 4, int s
 std::vector<Move> lastmoves;
 void printmoves(Board board, std::vector<Move> moves)
 {
-    auto r = 1, c = 50;
+    auto r = 2, c = 50;
 
     for (auto i = 0; i < lastmoves.size(); ++i) {
-        std::cout << ansi.pos(r, c) << ansi.ERASE_CURSOR_EOL;
+        std::cout << ansi.pos(r, c) << ansi.gr(ansi.BLUE_BACKGROUND) << ansi.ERASE_CURSOR_EOL;
         r++;
     }
 
-    r = 1, c = 50;
+    r = 2, c = 50;
 
     auto& color = board.turn == Color::White ? ansi.BRIGHT_BLUE_FOREGROUND : ansi.BRIGHT_GREEN_FOREGROUND;
     for (auto& move : moves) {
-        std::cout << ansi.pos(r, c) << ansi.gr(color) << move.toString() << ansi.gr(std::list<std::string>());
+        std::cout << ansi.pos(r, c) << ansi.gr(color) << ansi.gr(ansi.BLACK_BACKGROUND) << move.toString() << ansi.gr(std::list<std::string>());
         r++;
     }
     lastmoves = moves;
@@ -187,8 +187,8 @@ Move Engine::findBestMove(Board& board, int depth)
         }
     }
 
-    std::cout << ansi.pos(30, 11) << "Best move: " << bestMove.toString()
-        << " value: " << bestValue << ansi.ERASE_IN_LINE;
+    std::cout << ansi.pos(30, 11) << ansi.gr(ansi.BLUE_BACKGROUND) << "Best move: " << bestMove.toString()
+        << " value: " << bestValue << ansi.gr(ansi.BLUE_BACKGROUND) << ansi.ERASE_IN_LINE;
     return bestMove;
 }
 

@@ -232,6 +232,7 @@ public:
                 for (int x = 0; x < 8; ++x) {
                     auto p = board[y * 8 + x];
 
+                    // auto bit = (7 - y) * 8 + x;
                     auto bit = y * 8 + x;
                     uint64_t mask = 1ULL << bit;
 

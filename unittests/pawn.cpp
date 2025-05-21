@@ -9,115 +9,50 @@
 #include "bitboard.h"
 #include "engine.h"
 #include "chess.h"
+#include "utils.h"
 
 #pragma warning(disable:4996)
 
 namespace move_unit_test
 {
-    static bool TestBoardMoves(std::string fen, std::vector<Move>& expectedMoves, Color side)
-    {
-        Board board(fen);
-        auto generated = board.generateLegalMoves(side);
-
-        // Already defined
-        auto encode = [](const Move& m)
-            {
-                return (m.from.y * 8 + m.from.x) * 64 + (m.to.y * 8 + m.to.x);
-            };
-
-        auto decode = [](uint32_t code)
-            {
-                int fromIdx = code / 64;
-                int toIdx = code % 64;
-                Square from{ fromIdx % 8, fromIdx / 8 };
-                Square to{ toIdx % 8, toIdx / 8 };
-                return Move{ from, to };
-            };
-
-        auto comp = [](int a, int b)
-            {
-                return a < b;
-            };
-
-        std::vector<uint32_t>actualVec;
-        for (const auto& m : generated)
-            actualVec.push_back(encode(m));
-
-        std::vector<uint32_t>expectedVec;
-        for (const auto& m : expectedMoves)
-            expectedVec.push_back(encode(m));
-
-        std::sort(actualVec.begin(), actualVec.end(), comp);
-        std::sort(expectedVec.begin(), expectedVec.end(), comp);
-
-        std::vector<uint32_t> missing;
-        auto miss = std::set_difference(expectedVec.begin(), expectedVec.end(),
-            actualVec.begin(), actualVec.end(), inserter(missing, missing.begin()));
-
-        std::vector<uint32_t> extra;
-        auto ex = std::set_difference(actualVec.begin(), actualVec.end(),
-            expectedVec.begin(), expectedVec.end(), inserter(extra, extra.begin()));
-
-        auto count = missing.size() + extra.size();
-        if (count != 0) {
-            std::cout << "Fen: " << fen << "\n===========================\n";
-            Board board(fen);
-            std::cout << board.toString() << "\n============================\n";
-
-            // Missing moves
-            for (const auto& m : missing) {
-                std::cout << "Missing expected move: " + decode(m).toString() << "\n";
-            }
-
-            // Extra moves
-            for (const auto& m : extra) {
-                std::cout << "Unexpected move: " + decode(m).toString() << "\n";
-            }
-
-            EXPECT_EQ(count, 0);
-        }
-        return count == 0;
-    }
+    auto locationToSquare = [](std::string from) -> Square
+        {
+            auto file = std::tolower(from[0]) - 'a';
+            auto rank = from[1] - '1';
+            auto square = Square{ file, 7 - rank };
+            return square;
+        };
 
     TEST(pawn_unit_test, white_pawn_test_start)
     {
-        auto locationToSquare = [](std::string from) -> Square
-            {
-                auto file = std::tolower(from[0]) - 'a';
-                auto rank = from[1] - '1';
-                return Square{ file, rank };
-            };
-
         std::vector<Move> expectedMoves;
-        for (auto row = 'A'; row <= 'H'; ++row) {
+        for (auto rank = 'A'; rank <= 'H'; ++rank) {
             Move expectedMove;
-            expectedMove.from = locationToSquare(std::string() + row + '2');
-            expectedMove.to = locationToSquare(std::string() + row + '3');
+            std::string lock = "A0";
+            lock[0] = rank;
+            lock[1] = '7';
+            expectedMove.from = locationToSquare(lock);
+            lock[1] = '6';
+            expectedMove.to = locationToSquare(lock);
 
             expectedMoves.push_back(expectedMove);
-            expectedMove.to = locationToSquare(std::string() + row + '4');
+            lock[1] = '5';
+            expectedMove.to = locationToSquare(std::string() + rank + '5');
             expectedMoves.push_back(expectedMove);
         }
-        TestBoardMoves("8/8/8/8/8/8/PPPPPPPP/4K3 w KQkq - 0 1", expectedMoves, Color::White);
+        TestBoardMoves("k7/8/8/8/8/8/PPPPPPPP/4K3 w KQkq - 0 1", expectedMoves, Color::White);
     }
 
     TEST(pawn_unit_test, black_pawn_test_start)
     {
-        auto locationToSquare = [](std::string from) -> Square
-            {
-                auto file = std::tolower(from[0]) - 'a';
-                auto rank = from[1] - '1';
-                return Square{ file, rank };
-            };
-
         std::vector<Move> expectedMoves;
-        for (auto row = 'H'; row >= 'A'; --row) {
+        for (auto rank = 'H'; rank >= 'A'; --rank) {
             Move expectedMove;
-            expectedMove.from = locationToSquare(std::string() + row + '7');
-            expectedMove.to = locationToSquare(std::string() + row + '6');
+            expectedMove.from = locationToSquare(std::string() + rank + '7');
+            expectedMove.to = locationToSquare(std::string() + rank + '6');
 
             expectedMoves.push_back(expectedMove);
-            expectedMove.to = locationToSquare(std::string() + row + '5');
+            expectedMove.to = locationToSquare(std::string() + rank + '5');
             expectedMoves.push_back(expectedMove);
         }
         TestBoardMoves("8/pppppppp/8/8/8/8/8/4K3 w KQkq - 0 1", expectedMoves, Color::Black);
@@ -125,17 +60,11 @@ namespace move_unit_test
 
     TEST(pawn_unit_test, white_pawn_test_march)
     {
-        auto locationToSquare = [](std::string from) -> Square
-            {
-                auto file = std::tolower(from[0]) - 'a';
-                auto rank = from[1] - '1';
-                return Square{ file, rank };
-            };
         std::string fen = "8/8/8/8/8/8/6P1/4K3 w KQkq - 0 1";
 
         auto a = 1;
         std::vector<Move> expectedMoves;
-        for (auto row = 8; row < 8; ++row) {
+        for (auto row = 1; row < 7; ++row) {
             while (a < 8) {
                 char r1 = '0' + (char)(7 - a);
                 char r2 = '0' + (char)(a);
@@ -162,12 +91,6 @@ namespace move_unit_test
  
     TEST(pawn_unit_test, black_pawn_test_march)
     {
-        auto locationToSquare = [](std::string from) -> Square
-            {
-                auto file = std::tolower(from[0]) - 'a';
-                auto rank = from[1] - '1';
-                return Square{ file, rank };
-            };
         std::string fen = "8/6p1/8/8/8/8/8/4K3 w KQkq - 0 1";
 
         auto a = 1;
@@ -199,12 +122,6 @@ namespace move_unit_test
 
     TEST(pawn_unit_test, white_pawn_capture_left)
     {
-        auto locationToSquare = [](std::string from) -> Square
-            {
-                auto file = std::tolower(from[0]) - 'a';
-                auto rank = from[1] - '1';
-                return Square{ file, rank };
-            };
 
         std::vector<Move> expectedMoves;
 
