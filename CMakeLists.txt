@@ -17,7 +17,7 @@ add_library(chesslib
     engine.h
     fen.h
     move.h
-    squar.h
+    square.h
 )
 
 target_include_directories(chesslib PUBLIC

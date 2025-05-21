@@ -11,6 +11,7 @@ namespace move_unit_test
     bool TestBoardMoves(std::string fen, std::vector<Move>& expectedMoves, Color side)
     {
         Board board(fen);
+        auto boardstr = board.toString();
 
         auto generated = board.generateLegalMoves(side);
 

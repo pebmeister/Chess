@@ -50,10 +50,10 @@ std::string Board::toString() const
 Board::Board(std::string fen)
 {
     moveHistory.clear();
-    whiteKingside = true;
-    whiteQueenside = true;
-    blackKingside = true;
-    blackQueenside = true;
+    whiteKingside = false;
+    whiteQueenside = false;
+    blackKingside = false;
+    blackQueenside = false;
     enPassantTarget = Square{ -1, -1 };
     halfMoveClock = 0;
     fullMoveNumber = 1;
@@ -64,10 +64,10 @@ Board::Board(std::string fen)
 void Board::reset()
 {
     moveHistory.clear();
-    whiteKingside = true;
-    whiteQueenside = true;
-    blackKingside = true;
-    blackQueenside = true;
+    whiteKingside = false;
+    whiteQueenside = false;
+    blackKingside = false;
+    blackQueenside = false;
     enPassantTarget = Square{ -1, -1 };
     halfMoveClock = 0;
     fullMoveNumber = 1;
@@ -456,6 +456,8 @@ std::vector<Move> Board::generateKingMoves(Color side) const
         };
 
     uint64_t kingBB = (side == Color::White) ? white_kings : black_kings;
+    if (kingBB == 0) return moves;
+
     int kingIndex = std::countr_zero(kingBB);
     uint64_t ownPieces = (side == Color::White) ? whitePieces : blackPieces;
 
@@ -511,8 +513,8 @@ uint64_t Board::kingAttacks(uint64_t kingBB) const
 
     attacks |= (kingBB << 8);                    // North
     attacks |= (kingBB >> 8);                    // South
-    attacks |= (kingBB << 1) & notAFile;         // East
-    attacks |= (kingBB >> 1) & notHFile;         // West
+    attacks |= (kingBB >> 1) & notAFile;         // East (right shift, lower index)
+    attacks |= (kingBB << 1) & notHFile;         // West (left shift, higher index)
     attacks |= (kingBB << 9) & notAFile;         // NorthEast
     attacks |= (kingBB << 7) & notHFile;         // NorthWest
     attacks |= (kingBB >> 7) & notAFile;         // SouthEast
@@ -532,20 +534,20 @@ std::vector<Move> Board::generateSlidingMoves(Color side, uint64_t pieces, const
             return Square{ index % 8, index / 8 };
         };
 
-    auto onBoard = [](int from, int to, int delta)
+    auto onBoard = [](int prev, int curr, int delta)
         {
-            if (to < 0 || to >= 64) return false;
-            int fx = from % 8, tx = to % 8;
+            if (curr < 0 || curr >= 64) return false;
 
-            bool fromFileH = (from % 8 == 7);
-            bool fromFileA = (from % 8 == 0);
+            int px = prev % 8;
+            int cx = curr % 8;
 
-            // Disallow wrap across ranks
-            if ((delta == 1 || delta == 9 || delta == -7) && fromFileH) return false;
-            if ((delta == -1 || delta == -9 || delta == 7) && fromFileA) return false;
+            // Prevent horizontal wrap
+            if (delta == 1 && cx <= px) return false;
+            if (delta == -1 && cx >= px) return false;
 
             return true;
         };
+
 
     for (uint64_t bb = pieces; bb; bb &= bb - 1) {
         int from = std::countr_zero(bb);
@@ -646,7 +648,7 @@ std::vector<Move> Board::generatePawnMoves(Color side) const
 {
     auto indexToSquare = [](int index) -> Square
         {
-            return Square{ index % 8, 7 - index / 8 };
+            return Square{ index % 8, index / 8 };
         };
 
     std::vector<Move> moves;
@@ -773,8 +775,8 @@ std::vector<Move> Board::generatePseudoLegalMoves(Color side) const
     auto queenMoves = generateQueenMoves(side);
     moves.insert(moves.end(), queenMoves.begin(), queenMoves.end());
 
-    //auto kingMoves = generateKingMoves(side);
-    //moves.insert(moves.end(), kingMoves.begin(), kingMoves.end());
+    auto kingMoves = generateKingMoves(side);
+    // moves.insert(moves.end(), kingMoves.begin(), kingMoves.end());
 
     return moves;
 }

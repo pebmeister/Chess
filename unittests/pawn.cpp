@@ -17,10 +17,9 @@ namespace move_unit_test
 {
     auto locationToSquare = [](std::string from) -> Square
         {
-            auto file = std::tolower(from[0]) - 'a';
-            auto rank = from[1] - '1';
-            auto square = Square{ file, 7 - rank };
-            return square;
+            auto file = std::tolower(from[0]) - 'a';  // 'a' to 0
+            auto rank = from[1] - '1';                // '1' to 0, '8' to 7
+            return Square{ file, rank };              // no inversion needed
         };
 
     TEST(pawn_unit_test, white_pawn_test_start)
@@ -30,14 +29,13 @@ namespace move_unit_test
             Move expectedMove;
             std::string lock = "A0";
             lock[0] = rank;
-            lock[1] = '7';
+            lock[1] = '2';
             expectedMove.from = locationToSquare(lock);
-            lock[1] = '6';
+            lock[1] = '3';
             expectedMove.to = locationToSquare(lock);
-
             expectedMoves.push_back(expectedMove);
-            lock[1] = '5';
-            expectedMove.to = locationToSquare(std::string() + rank + '5');
+            lock[1] = '4';
+            expectedMove.to = locationToSquare(lock);
             expectedMoves.push_back(expectedMove);
         }
         TestBoardMoves("k7/8/8/8/8/8/PPPPPPPP/4K3 w KQkq - 0 1", expectedMoves, Color::White);
