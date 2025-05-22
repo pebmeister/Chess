@@ -5,7 +5,6 @@ set(CMAKE_CXX_STANDARD 20 CACHE STRING "v")
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-
 include(FetchContent)
 
 FetchContent_Declare(
@@ -28,8 +27,10 @@ if (${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Windows")
 endif()
 
 add_executable(unittest
+  bishop.cpp
   fen.cpp
   pawn.cpp
+  queen.cpp
   rook.cpp
   utils.cpp
   utils.h

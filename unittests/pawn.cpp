@@ -38,7 +38,7 @@ namespace move_unit_test
             expectedMove.to = locationToSquare(lock);
             expectedMoves.push_back(expectedMove);
         }
-        TestBoardMoves("k7/8/8/8/8/8/PPPPPPPP/4K3 w KQkq - 0 1", expectedMoves, Color::White);
+        TestBoardMoves("k7/8/8/8/8/8/PPPPPPPP/8 w KQkq - 0 1", expectedMoves, Color::White);
     }
 
     TEST(pawn_unit_test, black_pawn_test_start)
@@ -58,7 +58,7 @@ namespace move_unit_test
 
     TEST(pawn_unit_test, white_pawn_test_march)
     {
-        std::string fen = "8/8/8/8/8/8/6P1/4K3 w KQkq - 0 1";
+        std::string fen = "8/8/8/8/8/8/6P1/8 w KQkq - 0 1";
 
         auto a = 1;
         std::vector<Move> expectedMoves;
@@ -74,7 +74,7 @@ namespace move_unit_test
                 Move expectedMove;
 
                 expectedMove.from = { 7 - a, row };
-                expectedMove.to = { 7 - a, row + 1};
+                expectedMove.to = { 7 - a, row + 1 };
                 expectedMoves.push_back(expectedMove);
                 if (row == 1) {
                     expectedMove.to = { 7 - a, row + 2 };
@@ -86,10 +86,10 @@ namespace move_unit_test
             }
         }
     }
- 
+
     TEST(pawn_unit_test, black_pawn_test_march)
     {
-        std::string fen = "8/6p1/8/8/8/8/8/4K3 w KQkq - 0 1";
+        std::string fen = "8/6p1/8/8/8/8/8/8 w KQkq - 0 1";
 
         auto a = 1;
         std::vector<Move> expectedMoves;
@@ -160,12 +160,12 @@ namespace move_unit_test
                 captureMove.to = { x - 1, y + 1 };
                 expectedMoves.push_back(captureMove);
 
-                
+
                 Move normalMove;
                 normalMove.from = { x, y };
                 normalMove.to = { x, y + 1 };
                 expectedMoves.push_back(normalMove);
-                if (y == 1)                     {
+                if (y == 1) {
                     normalMove.to = { x, y + 2 };
                     expectedMoves.push_back(normalMove);
                 }
@@ -179,7 +179,7 @@ namespace move_unit_test
         std::vector<Move> expectedMoves;
         for (int x = 0; x < 7; ++x) { // not on file H
             for (int y = 6; y >= 1; --y) { // ranks 7 to 2 (black pawns can capture to y-1)
-                std::string fen = "8/8/8/8/8/8/8/4K3 b - - 0 1";
+                std::string fen = "8/8/8/8/8/8/8/8 b - - 0 1";
 
                 int pawnIndex = (7 - y) * 8 + x;
                 int targetIndex = (7 - (y - 1)) * 8 + (x + 1);
@@ -227,10 +227,58 @@ namespace move_unit_test
 
     TEST(pawn_unit_test, white_pawn_test_nomove)
     {
-        std::string fen = "P7/8/8/8/8/8/8/4K3 w KQkq - 0 1";
+        std::string fen = "P7/8/8/8/8/8/8/8 w KQkq - 0 1";
         std::vector<Move> expectedMoves;
         expectedMoves.clear();
         TestBoardMoves(fen, expectedMoves, Color::White);
     }
 
+    TEST(pawn_unit_test, white_pawn_every_square)
+    {
+        auto locationToSquare = [](std::string from) -> Square
+            {
+                auto file = std::tolower(from[0]) - 'a';
+                auto rank = from[1] - '1';
+                return Square{ file, rank };
+            };
+
+        std::vector<Move> expectedMoves;
+        Move expectedMove;
+
+        for (auto startrank = 'A'; startrank <= 'H'; ++startrank) {
+
+            for (auto startfile = '1'; startfile <= '8'; ++startfile) {
+                expectedMoves.clear();
+                auto c = startrank - 'A';
+                auto r = startfile - '1';
+
+                std::string boardStr = std::string(
+                    "8 . . . . . . . . \n"
+                    "7 . . . . . . . . \n"
+                    "6 . . . . . . . . \n"
+                    "5 . . . . . . . . \n"
+                    "4 . . . . . . . . \n"
+                    "3 . . . . . . . . \n"
+                    "2 . . . . . . . . \n"
+                    "1 . . . . . . . . \n"
+                    "  a b c d e f g h\n");
+
+                placePiece(boardStr, 'P', c, r);
+                auto fen = boardToFEN(boardStr, Color::White);
+
+                if (startfile < '8') {
+                    expectedMove.from = locationToSquare(std::string() + startrank + startfile);
+                    expectedMove.to = locationToSquare(std::string() + startrank + (char)(startfile + 1));
+                    expectedMoves.push_back(expectedMove);
+
+                    if (startfile == '2') {
+                        expectedMove.to = locationToSquare(std::string() + startrank + (char)(startfile + 2));
+                        expectedMoves.push_back(expectedMove);
+                    }
+                }
+                TestBoardMoves(fen, expectedMoves, Color::White);
+            }
+        }
+    }
 }
+

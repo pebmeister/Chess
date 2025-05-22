@@ -75,7 +75,7 @@ private:
     std::vector<Move> generateQueenMoves(Color side) const;
     std::vector<Move> generateKingMoves(Color side) const;
 
-    std::vector<Move> generateSlidingMoves(Color side, uint64_t pieces, const int* directions, int dirCount) const;
+    std::vector<Move> generateSlidingMoves(Color side, uint64_t pieces, const std::vector<int>& directions) const;
     void updateAggregateBitboards();
     uint64_t& getPieceBB(PieceType type, Color color);
 

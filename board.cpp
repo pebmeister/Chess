@@ -1,4 +1,4 @@
-#include <bit>
+﻿#include <bit>
 #include <bitset>
 #include <algorithm>
 #include <assert.h>
@@ -23,9 +23,9 @@ inline static uint64_t knightAttacks(uint64_t knights)
     return (h1 << 16) | (h1 >> 16) | (h2 << 8) | (h2 >> 8);
 }
 
-const int rookDirections[] = { 8, -8, 1, -1 };
-const int bishopDirections[] = { 9, 7, -7, -9 };
-const int queenDirections[] = { 8, -8, 1, -1, 9, 7, -7, -9 };
+std::vector<int> rookDirections = { 8, -8, 1, -1 };
+std::vector<int> bishopDirections = { 9, 7, -7, -9 };
+std::vector<int> queenDirections = { 8, -8, 1, -1, 9, 7, -7, -9 };
 
 Board::Board()
 {
@@ -523,7 +523,7 @@ uint64_t Board::kingAttacks(uint64_t kingBB) const
     return attacks;
 }
 
-std::vector<Move> Board::generateSlidingMoves(Color side, uint64_t pieces, const int* directions, int dirCount) const
+std::vector<Move> Board::generateSlidingMoves(Color side, uint64_t pieces, const std::vector<int>& directions) const
 {
     std::vector<Move> moves;
     uint64_t ownPieces = (side == Color::White) ? whitePieces : blackPieces;
@@ -539,28 +539,34 @@ std::vector<Move> Board::generateSlidingMoves(Color side, uint64_t pieces, const
             if (curr < 0 || curr >= 64) return false;
 
             int px = prev % 8;
+            int py = prev / 8;
             int cx = curr % 8;
+            int cy = curr / 8;
 
-            // Prevent horizontal wrap
-            if (delta == 1 && cx <= px) return false;
-            if (delta == -1 && cx >= px) return false;
+            int dx = std::abs(cx - px);
+            int dy = std::abs(cy - py);
 
-            return true;
+            switch (delta) {
+                case 1: case -1:       return cy == py && dx > 0;            // Horizontal
+                case 8: case -8:       return cx == px && dy > 0;            // Vertical
+                case 9: case -9:       return dx == dy && dx > 0;            // Diagonal
+                case 7: case -7:       return dx == dy && dx > 0;            // Diagonal
+                default:               return false;
+            }
         };
-
 
     for (uint64_t bb = pieces; bb; bb &= bb - 1) {
         int from = std::countr_zero(bb);
-        for (int i = 0; i < dirCount; ++i) {
-            int delta = directions[i];
+        for (int delta: directions) {
+
             int to = from + delta;
 
             int square = from + delta;
             while (onBoard(from, square, delta)) {
                 uint64_t toBB = 1ULL << square;
                 if (ownPieces & toBB) break;
-
-                moves.emplace_back(indexToSquare(from), indexToSquare(square));
+                Move m{ indexToSquare(from), indexToSquare(square) };
+                moves.emplace_back(m);
                 if (opponentPieces & toBB) break;
 
                 square += delta;
@@ -574,19 +580,19 @@ std::vector<Move> Board::generateSlidingMoves(Color side, uint64_t pieces, const
 std::vector<Move> Board::generateRookMoves(Color side) const
 {
     uint64_t rooks = (side == Color::White) ? white_rooks : black_rooks;
-    return generateSlidingMoves(side, rooks, rookDirections, 4);
+    return generateSlidingMoves(side, rooks, rookDirections);
 }
 
 std::vector<Move> Board::generateBishopMoves(Color side) const
 {
     uint64_t bishops = (side == Color::White) ? white_bishops : black_bishops;
-    return generateSlidingMoves(side, bishops, bishopDirections, 4);
+    return generateSlidingMoves(side, bishops, bishopDirections);
 }
 
 std::vector<Move> Board::generateQueenMoves(Color side) const
 {
     uint64_t queens = (side == Color::White) ? white_queens : black_queens;
-    return generateSlidingMoves(side, queens, queenDirections, 8);
+    return generateSlidingMoves(side, queens, queenDirections);
 }
 
 std::vector<Move> Board::generateKnightMoves(Color side) const
@@ -776,7 +782,7 @@ std::vector<Move> Board::generatePseudoLegalMoves(Color side) const
     moves.insert(moves.end(), queenMoves.begin(), queenMoves.end());
 
     auto kingMoves = generateKingMoves(side);
-    // moves.insert(moves.end(), kingMoves.begin(), kingMoves.end());
+    moves.insert(moves.end(), kingMoves.begin(), kingMoves.end());
 
     return moves;
 }

@@ -12,7 +12,6 @@ namespace move_unit_test
     {
         Board board(fen);
         auto boardstr = board.toString();
-
         auto generated = board.generateLegalMoves(side);
 
         // Already defined
@@ -30,7 +29,7 @@ namespace move_unit_test
                 return Move{ from, to };
             };
 
-        auto comp = [](int a, int b)
+        auto comp = [](uint32_t a, uint32_t b)
             {
                 return a < b;
             };
@@ -121,5 +120,11 @@ namespace move_unit_test
         return fen;
     }
 
-
+    void placePiece(std::string& boardStr, char piece, int x, int y)
+    {
+        int row = 7 - y;  // board row (0 at top)
+        int col = x;      // file (0 = a)
+        int index = row * 19 + ((col * 2) + 2);
+        boardStr[index] = piece;
+    }
 }

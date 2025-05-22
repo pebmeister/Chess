@@ -16,7 +16,7 @@
 namespace move_unit_test
 {
 
-    TEST(rook_unit_test, white_rook_test_start)
+    TEST(bishop_unit_test, white_bishop_test)
     {
         auto locationToSquare = [](std::string from) -> Square
             {
@@ -29,7 +29,6 @@ namespace move_unit_test
         Move expectedMove;
 
         for (auto startrank = 'A'; startrank <= 'H'; ++startrank) {
-
             for (auto startfile = '1'; startfile <= '8'; ++startfile) {
                 expectedMoves.clear();
                 auto c = startrank - 'A';
@@ -46,21 +45,42 @@ namespace move_unit_test
                     "1 . . . . . . . . \n"
                     "  a b c d e f g h\n");
 
-                placePiece(boardStr, 'R', c, r);
+                placePiece(boardStr, 'B', c, r);
                 auto fen = boardToFEN(boardStr, Color::White);
 
                 expectedMove.from = locationToSquare(std::string() + startrank + startfile);
-                for (auto file = '1'; file <= '8'; ++file) {
-                    if (file != startfile) {
-                        expectedMove.to = locationToSquare(std::string() + startrank + file);
-                        expectedMoves.push_back(expectedMove);
-                    }
+
+                auto file = (char)(startfile + 1);
+                auto rank = (char)(startrank + 1);
+                while (file <= '8' && rank <= 'H') {
+                    expectedMove.to = locationToSquare(std::string() + rank + file);
+                    expectedMoves.push_back(expectedMove);
+                    file++;
+                    rank++;
                 }
-                for (auto rank = 'A'; rank <= 'H'; ++rank) {
-                    if (rank != startrank) {
-                        expectedMove.to = locationToSquare(std::string() + rank + startfile);
-                        expectedMoves.push_back(expectedMove);
-                    }
+                file = (char)(startfile - 1);
+                rank = (char)(startrank - 1);
+                while (file >= '1' && rank >= 'A') {
+                    expectedMove.to = locationToSquare(std::string() + rank + file);
+                    expectedMoves.push_back(expectedMove);
+                    file--;
+                    rank--;
+                }
+                rank = (char)(startrank - 1);
+                file = (char)(startfile + 1);
+                while (file <= '8' && rank >= 'A') {
+                    expectedMove.to = locationToSquare(std::string() + rank + file);
+                    expectedMoves.push_back(expectedMove);
+                    file++;
+                    rank--;
+                }
+                rank = (char)(startrank + 1);
+                file = (char)(startfile - 1);
+                while (file >= '1' && rank <= 'H') {
+                    expectedMove.to = locationToSquare(std::string() + rank + file);
+                    expectedMoves.push_back(expectedMove);
+                    file--;
+                    rank++;
                 }
                 TestBoardMoves(fen, expectedMoves, Color::White);
             }
