@@ -187,8 +187,6 @@ Move Engine::findBestMove(Board& board, int depth)
         }
     }
 
-    std::cout << ansi.pos(30, 11) << ansi.gr(ansi.BLUE_BACKGROUND) << "Best move: " << bestMove.toString()
-        << " value: " << bestValue << ansi.gr(ansi.BLUE_BACKGROUND) << ansi.ERASE_IN_LINE;
     return bestMove;
 }
 

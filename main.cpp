@@ -6,6 +6,9 @@
 #include "chess.h"
 #include "fen.h"
 
+const int BOARD_ROW = 2;
+const int BOARD_COL = 2;
+
 int main()
 {
     Board board;
@@ -15,7 +18,7 @@ int main()
         std::string(ansi.gr(std::list<std::string>({ ansi.BLUE_BACKGROUND }))) <<
         ansi.ERASE_ALL_DISPLAY << ansi.HOME << ansi.HIDE_CURSOR;
 
-    int row = 2, col = 10;
+    int row = BOARD_ROW, col = BOARD_COL;
     drawChessboard(row, col, 4, 2);
     printBoard(board, row, col, 4, 2);
 
@@ -33,7 +36,6 @@ int main()
             }
             break;
         }
-
         std::cout
             << ansi.pos(31, 11)
             << ansi.gr(ansi.BLUE_BACKGROUND)
@@ -52,7 +54,9 @@ int main()
             break;
         }
         else if (board.isInCheck(board.turn)) {
-            std::cout << (board.turn == Color::White ? "White" : "Black") << " is in check!\n";
+            std::cout 
+                << ansi.pos(35, 11)
+                << (board.turn == Color::White ? "White" : "Black") << " is in check!\n";
         }
     }
 
