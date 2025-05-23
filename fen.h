@@ -6,6 +6,7 @@
 #include <stdexcept>
 #include <sstream>
 #include <vector>
+#include <cstdint>
 
 #include "chesstypes.h"
 
