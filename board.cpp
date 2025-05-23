@@ -58,6 +58,7 @@ Board::Board(std::string fen)
     halfMoveClock = 0;
     fullMoveNumber = 1;
     turn = Color::White;
+    initKingAttacks();
     loadFEN(fen);
 }
 
@@ -73,6 +74,36 @@ void Board::reset()
     fullMoveNumber = 1;
     turn = Color::White;
     loadFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+}
+
+static std::array<uint64_t, 64> KING_ATTACKS;
+
+void Board::initKingAttacks()
+{
+    auto kingAttackMask = [](const int& sq)->uint64_t
+    {
+        int file = sq % 8;
+        int rank = sq / 8;
+
+        uint64_t attacks = 0ULL;
+        for (int dr = -1; dr <= 1; ++dr) {
+            for (int df = -1; df <= 1; ++df) {
+                if (dr == 0 && df == 0) continue;
+
+                int r = rank + dr;
+                int f = file + df;
+
+                if (r >= 0 && r <= 7 && f >= 0 && f <= 7) {
+                    attacks |= 1ULL << (r * 8 + f);
+                }
+            }
+        }
+        return attacks;
+    };
+
+    for (int sq = 0; sq < 64; ++sq) {
+        KING_ATTACKS[sq] = kingAttackMask(sq);
+    }
 }
 
 bool Board::isInside(int x, int y) const
@@ -184,10 +215,6 @@ void Board::makeMove(const Move& move)
     // Move the piece
     Piece movedPiece = get(move.from.x, move.from.y);
     
-    if (movedPiece.type == PieceType::None) {            
-        throw new std::runtime_error("attempt to move a blank square.");
-    }
-
     uint64_t& pieceBB = getPieceBB(movedPiece.type, movedPiece.color);
     pieceBB &= ~fromBB;
 
@@ -394,6 +421,44 @@ void Board::loadFEN(std::string_view  fenstr)
     turn = fen.turn;
 }
 
+uint64_t generateDiagonalAttacks(int square, uint64_t occupancy)
+{
+    uint64_t attacks = 0ULL;
+
+    int rank = square / 8;
+    int file = square % 8;
+
+    // ↗ NE
+    for (int r = rank + 1, f = file + 1; r <= 7 && f <= 7; ++r, ++f) {
+        int sq = r * 8 + f;
+        attacks |= (1ULL << sq);
+        if (occupancy & (1ULL << sq)) break;
+    }
+
+    // ↖ NW
+    for (int r = rank + 1, f = file - 1; r <= 7 && f >= 0; ++r, --f) {
+        int sq = r * 8 + f;
+        attacks |= (1ULL << sq);
+        if (occupancy & (1ULL << sq)) break;
+    }
+
+    // ↘ SE
+    for (int r = rank - 1, f = file + 1; r >= 0 && f <= 7; --r, ++f) {
+        int sq = r * 8 + f;
+        attacks |= (1ULL << sq);
+        if (occupancy & (1ULL << sq)) break;
+    }
+
+    // ↙ SW
+    for (int r = rank - 1, f = file - 1; r >= 0 && f >= 0; --r, --f) {
+        int sq = r * 8 + f;
+        attacks |= (1ULL << sq);
+        if (occupancy & (1ULL << sq)) break;
+    }
+
+    return attacks;
+}
+
 bool Board::isSquareAttacked(Square sq, Color bySide) const
 {
     auto theirMoves = generatePseudoLegalMoves(bySide);
@@ -429,25 +494,18 @@ std::vector<Move> Board::generateLegalMoves(Color side)
     std::vector<Move> legalMoves;
     auto pseudoMoves = generatePseudoLegalMoves(side);
 
-    auto temp = *this; // inteded copy
-
     for (auto& m : pseudoMoves) {
         makeMove(m);
         if (!isInCheck(side))
             legalMoves.push_back(m);
         undoMove();
-        if (*this != temp) {
-            std::cout << "Undo FAIL Move " << m.toString() << "\n";
-            std::cout << "Before \n" << temp.toString() << "\nAfter Undo \n" << toString();
-
-            assert(*this == temp);
-        }
     }
     return legalMoves;
 }
 
 std::vector<Move> Board::generateKingMoves(Color side) const
 {
+
     std::vector<Move> moves;
 
     auto indexToSquare = [](int index) -> Square
@@ -458,17 +516,16 @@ std::vector<Move> Board::generateKingMoves(Color side) const
     uint64_t kingBB = (side == Color::White) ? white_kings : black_kings;
     if (kingBB == 0) return moves;
 
-    int kingIndex = std::countr_zero(kingBB);
     uint64_t ownPieces = (side == Color::White) ? whitePieces : blackPieces;
 
-    // Normal king moves
-    uint64_t targets = kingAttacks(kingBB) & ~ownPieces;
+    int kingIndex = std::countr_zero(kingBB);
+    uint64_t targets = KING_ATTACKS[kingIndex] & ~ownPieces;
 
-    if (targets != 0) {
-        for (uint64_t bb = targets; bb; bb &= bb - 1) {
-            int toIndex = std::countr_zero(bb);
-            moves.emplace_back(indexToSquare(kingIndex), indexToSquare(toIndex));
-        }
+    for (uint64_t bb = targets; bb; bb &= bb - 1) {
+        int toIndex = std::countr_zero(bb);
+        Square from = indexToSquare(kingIndex);
+        Square to = indexToSquare(toIndex);
+        moves.emplace_back(from, to);
     }
 
     // Castling

@@ -27,12 +27,9 @@ if (${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Windows")
 endif()
 
 add_executable(unittest
-  bishop.cpp
   fen.cpp
-  pawn.cpp
-  queen.cpp
-  rook.cpp
   utils.cpp
+  basicMoveTest.cpp
   utils.h
 )
 

@@ -207,6 +207,86 @@ private:
         return true;
     }
 
+    void calculateBitBoard()
+    {
+        white_pawns = white_knights = white_bishops = white_rooks = white_queens = white_kings = 0;
+        black_pawns = black_knights = black_bishops = black_rooks = black_queens = black_kings = 0;
+
+        for (int y = 0; y < 8; ++y) {
+            for (int x = 0; x < 8; ++x) {
+                auto p = board[y * 8 + x];
+
+                // auto bit = (7 - y) * 8 + x;
+                auto bit = y * 8 + x;
+                uint64_t mask = 1ULL << bit;
+
+                switch (p.type) {
+                    case PieceType::King:
+                        if (p.color == Color::White)
+                            white_kings |= mask;
+                        else
+                            black_kings |= mask;
+                        break;
+
+                    case PieceType::Queen:
+                        if (p.color == Color::White)
+                            white_queens |= mask;
+                        else
+                            black_queens |= mask;
+                        break;
+
+                    case PieceType::Bishop:
+                        if (p.color == Color::White)
+                            white_bishops |= mask;
+                        else
+                            black_bishops |= mask;
+                        break;
+
+                    case PieceType::Knight:
+                        if (p.color == Color::White)
+                            white_knights |= mask;
+                        else
+                            black_knights |= mask;
+                        break;
+
+                    case PieceType::Rook:
+                        if (p.color == Color::White)
+                            white_rooks |= mask;
+                        else
+                            black_rooks |= mask;
+                        break;
+
+                    case PieceType::Pawn:
+                        if (p.color == Color::White)
+                            white_pawns |= mask;
+                        else
+                            black_pawns |= mask;
+                        break;
+
+                    default:
+                        break;
+                }
+            }
+        }
+        whitePieces =
+            white_pawns |
+            white_knights |
+            white_bishops |
+            white_rooks |
+            white_queens |
+            white_kings;
+
+        blackPieces =
+            black_pawns |
+            black_knights |
+            black_bishops |
+            black_rooks |
+            black_queens |
+            black_kings;
+
+        allPieces = whitePieces | blackPieces;
+    }
+
 public:
     bool parse()
     {
@@ -225,82 +305,7 @@ public:
         if (okay) okay = parseFullMove();
 
         if (okay) {
-            white_pawns = white_knights = white_bishops = white_rooks = white_queens = white_kings = 0;
-            black_pawns = black_knights = black_bishops = black_rooks = black_queens = black_kings = 0;
-
-            for (int y = 0; y < 8; ++y) {
-                for (int x = 0; x < 8; ++x) {
-                    auto p = board[y * 8 + x];
-
-                    // auto bit = (7 - y) * 8 + x;
-                    auto bit = y * 8 + x;
-                    uint64_t mask = 1ULL << bit;
-
-                    switch (p.type) {
-                        case PieceType::King:
-                            if (p.color == Color::White)
-                                white_kings |= mask;
-                            else
-                                black_kings |= mask;
-                            break;
-
-                        case PieceType::Queen:
-                            if (p.color == Color::White)
-                                white_queens |= mask;
-                            else
-                                black_queens |= mask;
-                            break;
-
-                        case PieceType::Bishop:
-                            if (p.color == Color::White)
-                                white_bishops |= mask;
-                            else
-                                black_bishops |= mask;
-                            break;
-
-                        case PieceType::Knight:
-                            if (p.color == Color::White)
-                                white_knights |= mask;
-                            else
-                                black_knights |= mask;
-                            break;
-
-                        case PieceType::Rook:
-                            if (p.color == Color::White)
-                                white_rooks |= mask;
-                            else
-                                black_rooks |= mask;
-                            break;
-
-                        case PieceType::Pawn:
-                            if (p.color == Color::White)
-                                white_pawns |= mask;
-                            else
-                                black_pawns |= mask;
-                            break;
-
-                        default:
-                            break;
-                    }
-                }
-            }
-            whitePieces =
-                white_pawns |
-                white_knights |
-                white_bishops |
-                white_rooks |
-                white_queens |
-                white_kings;
-
-            blackPieces =
-                black_pawns |
-                black_knights |
-                black_bishops |
-                black_rooks |
-                black_queens |
-                black_kings;
-
-            allPieces = whitePieces | blackPieces;
+            calculateBitBoard();
         }
         return okay;
     }
@@ -395,8 +400,7 @@ public:
         _fenString = fen;
         auto _ = parse();
     }
-
-
+ 
     Fen()
     {
         clear();
@@ -405,6 +409,14 @@ public:
     Fen(std::string_view fen)
     {
         load(fen);
+    }
+
+    void placePiece(Piece piece, int x, int y)
+    {
+        int row = y;
+        int col = x;
+        board[row * 8 + col] = piece;
+        calculateBitBoard();
     }
 
     Fen(std::array<Piece, NUM_SQ>& _board,

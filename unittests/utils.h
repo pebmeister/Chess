@@ -7,7 +7,6 @@
 namespace move_unit_test
 {
     extern bool TestBoardMoves(std::string fen, std::vector<Move>& expectedMoves, Color side);
-    extern std::string boardToFEN(const std::string& input, Color turn);
-    extern void placePiece(std::string& boardStr, char piece, int x, int y);
-
+    extern void GenerateSlideMoves(std::vector<Move>& generatedMoves, const Fen& f, const std::vector<std::pair<int, int>>& moveOffsets, const int x, const int y, bool single = false);
+    extern std::vector<Move> FilterMoves(const std::vector<Move>& psuedoMoves, Fen& f);
 }

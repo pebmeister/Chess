@@ -245,6 +245,7 @@ namespace move_unit_test
         std::vector<Move> expectedMoves;
         Move expectedMove;
 
+        Fen f;
         for (auto startrank = 'A'; startrank <= 'H'; ++startrank) {
 
             for (auto startfile = '1'; startfile <= '8'; ++startfile) {
@@ -252,19 +253,8 @@ namespace move_unit_test
                 auto c = startrank - 'A';
                 auto r = startfile - '1';
 
-                std::string boardStr = std::string(
-                    "8 . . . . . . . . \n"
-                    "7 . . . . . . . . \n"
-                    "6 . . . . . . . . \n"
-                    "5 . . . . . . . . \n"
-                    "4 . . . . . . . . \n"
-                    "3 . . . . . . . . \n"
-                    "2 . . . . . . . . \n"
-                    "1 . . . . . . . . \n"
-                    "  a b c d e f g h\n");
-
-                placePiece(boardStr, 'P', c, r);
-                auto fen = boardToFEN(boardStr, Color::White);
+                f.clear();
+                f.placePiece({PieceType::Pawn, Color::White}, c, r);
 
                 if (startfile < '8') {
                     expectedMove.from = locationToSquare(std::string() + startrank + startfile);
@@ -276,7 +266,7 @@ namespace move_unit_test
                         expectedMoves.push_back(expectedMove);
                     }
                 }
-                TestBoardMoves(fen, expectedMoves, Color::White);
+                TestBoardMoves(f.toString(), expectedMoves, Color::White);
             }
         }
     }

@@ -74,57 +74,68 @@ namespace move_unit_test
         return count == 0;
     }
 
-    std::string boardToFEN(const std::string& input, Color turn)
+    void GenerateSlideMoves(std::vector<Move>& generatedMoves, const Fen& f, const std::vector<std::pair<int, int>>& moveOffsets, const int x, const int y, bool single)
     {
-        std::istringstream stream(input);
-        std::string line, fen;
-        int rowCount = 0;
+        auto isOccupied = [&f](int x, int y) -> bool
+            {
+                if (x < 0 || x >= 8 || y < 0 || y >= 8) return false;
+                int index = y * 8 + x;
+                return (f.allPieces >> index) & 1ULL;
+            };
 
-        while (std::getline(stream, line)) {
-            // Skip the coordinate line at the bottom
-            if (line.empty() || std::isdigit(line[0]) == 0)
-                continue;
+        Square from = Square{ x, y };
 
-            std::istringstream linestream(line);
-            std::string rowLabel;
-            linestream >> rowLabel; // discard rank number (8,7,...)
+        for (auto& [dx, dy] : moveOffsets) {
+            int tx = x + dx;
+            int ty = y + dy;
+            while (tx >= 0 && tx < 8 && ty >= 0 && ty < 8) {
 
-            int emptyCount = 0;
-            char piece;
-            while (linestream >> piece) {
-                if (piece == '.') {
-                    ++emptyCount;
+                
+                generatedMoves.emplace_back(from, Square{ tx, ty });
+
+                if (single || isOccupied(tx, ty)) {
+                    break;
                 }
-                else {
-                    if (emptyCount > 0) {
-                        fen += std::to_string(emptyCount);
-                        emptyCount = 0;
-                    }
-                    fen += piece;
-                }
+
+                tx += dx;
+                ty += dy;
             }
-            if (emptyCount > 0)
-                fen += std::to_string(emptyCount);
 
-            ++rowCount;
-            if (rowCount < 8)
-                fen += '/';
+        }
+    }
+
+    void GenerateSlideMoves(std::vector<Move>& generatedMoves, const std::vector<std::pair<int, int>>& moveOffsets, const int x, const int y)
+    {
+        Square from = Square{ x, y };
+
+        for (auto& [dx, dy] : moveOffsets) {
+            int tx = x + dx;
+            int ty = y + dy;
+            while (tx >= 0 && tx < 8 && ty >= 0 && ty < 8) {
+                generatedMoves.emplace_back(from, Square{ tx, ty });
+                tx += dx;
+                ty += dy;
+            }
+
+        }
+    }
+
+    std::vector<Move> FilterMoves(const std::vector<Move>& psuedoMoves, Fen& f)
+    {
+
+        if ((f.turn == Color::White && f.white_kings == 0) ||
+            (f.turn == Color::Black && f.black_kings == 0)) {
+            return psuedoMoves;
         }
 
-        if (turn == Color::White)
-            fen += " w ";
-        else
-            fen += " b ";
-        // Append standard FEN suffix
-        fen += "KQkq - 0 1";
-        return fen;
+        std::vector<Move> filteredMoves;
+        for (const auto& move : psuedoMoves) {
+            Board b(f.toString());
+            b.makeMove(move);
+            if (!b.isInCheck(f.turn))
+                filteredMoves.push_back(move);
+        }
+        return filteredMoves;
     }
 
-    void placePiece(std::string& boardStr, char piece, int x, int y)
-    {
-        int row = 7 - y;  // board row (0 at top)
-        int col = x;      // file (0 = a)
-        int index = row * 19 + ((col * 2) + 2);
-        boardStr[index] = piece;
-    }
 }
