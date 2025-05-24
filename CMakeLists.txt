@@ -18,6 +18,7 @@ add_library(chesslib
     fen.h
     move.h
     square.h
+    zobrist.h
 )
 
 target_include_directories(chesslib PUBLIC

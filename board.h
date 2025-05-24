@@ -73,7 +73,7 @@ private:
     std::vector<Move> generateRookMoves(Color side) const;
     std::vector<Move> generateBishopMoves(Color side) const;
     std::vector<Move> generateQueenMoves(Color side) const;
-    std::vector<Move> generateKingMoves(Color side) const;
+    std::vector<Move> generateKingMoves(Color side, bool includeCastling) const;
 
     std::vector<Move> generateSlidingMoves(Color side, uint64_t pieces, const std::vector<int>& directions) const;
     void updateAggregateBitboards();
@@ -129,11 +129,12 @@ public:
 
     Color opposite(Color c) const;
 
+    uint64_t zobristHash() const;
 
 private:
     std::vector<BoardState> moveHistory;
 
     bool isInside(int x, int y) const;
-    std::vector<Move> generatePseudoLegalMoves(Color side) const;
+    std::vector<Move> generatePseudoLegalMoves(Color side, bool includeCastling) const;
     uint64_t kingAttacks(uint64_t kingBB) const;
 };

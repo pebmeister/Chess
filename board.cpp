@@ -7,8 +7,11 @@
 #include "board.h"
 #include "fen.h"
 #include "chess.h"
+#include "zobrist.h"
+#include <unordered_map>
 
 extern Fen fen;
+extern Zobrist zobrist;
 
 inline static uint64_t knightAttacks(uint64_t knights)
 {
@@ -74,6 +77,42 @@ void Board::reset()
     fullMoveNumber = 1;
     turn = Color::White;
     loadFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+}
+
+uint64_t Board::zobristHash() const
+{
+    uint64_t hash = 0;
+
+    // Pieces
+    for (int y = 0; y < 8; ++y) {
+        for (int x = 0; x < 8; ++x) {
+            Piece p = get(x, y);
+            if (p.type == PieceType::None) continue;
+            int pt = static_cast<int>(p.type) - 1; // Assuming Pawn=1, ..., King=6
+            int color = (p.color == Color::White) ? 0 : 1;
+            int sq = y * 8 + x;
+            hash ^= zobrist.pieceSquare[pt][color][sq];
+        }
+    }
+
+    // Side to move
+    if (turn == Color::Black)
+        hash ^= zobrist.sideToMove;
+
+    // Castling rights
+    if (whiteKingside)  hash ^= zobrist.castlingRights[0];
+    if (whiteQueenside) hash ^= zobrist.castlingRights[1];
+    if (blackKingside)  hash ^= zobrist.castlingRights[2];
+    if (blackQueenside) hash ^= zobrist.castlingRights[3];
+
+    // En passant
+    if (enPassantTarget.x >= 0 && enPassantTarget.x < 8 &&
+        ((turn == Color::White && enPassantTarget.y == 5) ||
+            (turn == Color::Black && enPassantTarget.y == 2))) {
+        hash ^= zobrist.enPassantFile[enPassantTarget.x];
+    }
+
+    return hash;
 }
 
 static std::array<uint64_t, 64> KING_ATTACKS;
@@ -418,12 +457,17 @@ void Board::loadFEN(std::string_view  fenstr)
     blackPieces = fen.blackPieces;
     allPieces = fen.allPieces;
 
+    whiteKingside = fen.whiteKingside;
+    whiteQueenside = fen.whiteQueenside;
+    blackKingside = fen.blackKingside;
+    blackQueenside = fen.blackQueenside;
+
     turn = fen.turn;
 }
 
 bool Board::isSquareAttacked(Square sq, Color bySide) const
 {
-    auto theirMoves = generatePseudoLegalMoves(bySide);
+    auto theirMoves = generatePseudoLegalMoves(bySide, false);
     for (const auto& m : theirMoves) {
         if (m.to.x == sq.x && m.to.y == sq.y)
             return true;
@@ -454,7 +498,7 @@ bool Board::isCheckmate(Color side)
 std::vector<Move> Board::generateLegalMoves(Color side)
 {
     std::vector<Move> legalMoves;
-    auto pseudoMoves = generatePseudoLegalMoves(side);
+    auto pseudoMoves = generatePseudoLegalMoves(side, true);
 
     for (auto& m : pseudoMoves) {
         makeMove(m);
@@ -465,7 +509,7 @@ std::vector<Move> Board::generateLegalMoves(Color side)
     return legalMoves;
 }
 
-std::vector<Move> Board::generateKingMoves(Color side) const
+std::vector<Move> Board::generateKingMoves(Color side, bool includeCastling) const
 {
 
     std::vector<Move> moves;
@@ -489,6 +533,9 @@ std::vector<Move> Board::generateKingMoves(Color side) const
         Square to = indexToSquare(toIndex);
         moves.emplace_back(from, to);
     }
+
+    if (!includeCastling)
+        return moves;
 
     // Castling
     if (side == Color::White) {
@@ -781,7 +828,7 @@ std::vector<Move> Board::generatePawnMoves(Color side) const
     return moves;
 }
 
-std::vector<Move> Board::generatePseudoLegalMoves(Color side) const
+std::vector<Move> Board::generatePseudoLegalMoves(Color side, bool includeCastling) const
 {
     std::vector<Move> moves;
 
@@ -800,7 +847,7 @@ std::vector<Move> Board::generatePseudoLegalMoves(Color side) const
     auto queenMoves = generateQueenMoves(side);
     moves.insert(moves.end(), queenMoves.begin(), queenMoves.end());
 
-    auto kingMoves = generateKingMoves(side);
+    auto kingMoves = generateKingMoves(side, includeCastling);
     moves.insert(moves.end(), kingMoves.begin(), kingMoves.end());
 
     return moves;
