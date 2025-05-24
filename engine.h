@@ -4,7 +4,7 @@
 
 class Engine {
 public:
-    Move findBestMove(Board& board, int depth);
+    Move findBestMove(Board& board, int depth, std::vector<Move>& moves);
 
 private:
     int evaluate(const Board& board);

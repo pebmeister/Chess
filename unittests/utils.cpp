@@ -89,7 +89,6 @@ namespace move_unit_test
             int tx = x + dx;
             int ty = y + dy;
             while (tx >= 0 && tx < 8 && ty >= 0 && ty < 8) {
-
                 
                 generatedMoves.emplace_back(from, Square{ tx, ty });
 
@@ -104,25 +103,8 @@ namespace move_unit_test
         }
     }
 
-    void GenerateSlideMoves(std::vector<Move>& generatedMoves, const std::vector<std::pair<int, int>>& moveOffsets, const int x, const int y)
-    {
-        Square from = Square{ x, y };
-
-        for (auto& [dx, dy] : moveOffsets) {
-            int tx = x + dx;
-            int ty = y + dy;
-            while (tx >= 0 && tx < 8 && ty >= 0 && ty < 8) {
-                generatedMoves.emplace_back(from, Square{ tx, ty });
-                tx += dx;
-                ty += dy;
-            }
-
-        }
-    }
-
     std::vector<Move> FilterMoves(const std::vector<Move>& psuedoMoves, Fen& f)
     {
-
         if ((f.turn == Color::White && f.white_kings == 0) ||
             (f.turn == Color::Black && f.black_kings == 0)) {
             return psuedoMoves;

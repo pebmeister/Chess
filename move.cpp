@@ -21,7 +21,7 @@ std::string Move::toString() const
 std::string Move::toString(const Board& board) const
 {
     std::string str;
-    str += from.toString();;
+    str += from.toString();
     str += (type == MoveType::Capture || type == MoveType::EnPassant ? 'x' : '-');
     str += to.toString();
 

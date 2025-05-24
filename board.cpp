@@ -421,44 +421,6 @@ void Board::loadFEN(std::string_view  fenstr)
     turn = fen.turn;
 }
 
-uint64_t generateDiagonalAttacks(int square, uint64_t occupancy)
-{
-    uint64_t attacks = 0ULL;
-
-    int rank = square / 8;
-    int file = square % 8;
-
-    // ↗ NE
-    for (int r = rank + 1, f = file + 1; r <= 7 && f <= 7; ++r, ++f) {
-        int sq = r * 8 + f;
-        attacks |= (1ULL << sq);
-        if (occupancy & (1ULL << sq)) break;
-    }
-
-    // ↖ NW
-    for (int r = rank + 1, f = file - 1; r <= 7 && f >= 0; ++r, --f) {
-        int sq = r * 8 + f;
-        attacks |= (1ULL << sq);
-        if (occupancy & (1ULL << sq)) break;
-    }
-
-    // ↘ SE
-    for (int r = rank - 1, f = file + 1; r >= 0 && f <= 7; --r, ++f) {
-        int sq = r * 8 + f;
-        attacks |= (1ULL << sq);
-        if (occupancy & (1ULL << sq)) break;
-    }
-
-    // ↙ SW
-    for (int r = rank - 1, f = file - 1; r >= 0 && f >= 0; --r, --f) {
-        int sq = r * 8 + f;
-        attacks |= (1ULL << sq);
-        if (occupancy & (1ULL << sq)) break;
-    }
-
-    return attacks;
-}
-
 bool Board::isSquareAttacked(Square sq, Color bySide) const
 {
     auto theirMoves = generatePseudoLegalMoves(bySide);
