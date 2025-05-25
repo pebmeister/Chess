@@ -13,25 +13,6 @@ void printmoves(Board board, std::vector<Move> moves);
 std::vector<Move> lastmoves;
 ANSI_ESC ansi;
 
-void printmoves(Board board, std::vector<Move> moves)
-{
-    auto r = 2, c = 50;
-
-    for (auto i = 0; i < lastmoves.size(); ++i) {
-        std::cout << ansi.pos(r, c) << ansi.gr(ansi.BLUE_BACKGROUND) << ansi.ERASE_CURSOR_EOL;
-        r++;
-    }
-
-    r = 2, c = 50;
-
-    auto& color = board.turn == Color::White ? ansi.BRIGHT_BLUE_FOREGROUND : ansi.BRIGHT_GREEN_FOREGROUND;
-    for (auto& move : moves) {
-        std::cout << ansi.pos(r, c) << ansi.gr(color) << ansi.gr(ansi.BLACK_BACKGROUND) << move.toString() << ansi.gr(std::list<std::string>());
-        r++;
-    }
-    lastmoves = moves;
-}
-
 int main()
 {
     const int BOARD_ROW = 2;
@@ -41,7 +22,7 @@ int main()
     const int MSG_ROW = 31;
     const int MSG_COL = 11;
 
-    const int level = 4;
+    const int level = 5;
 
     Board board;
     Engine engine;
@@ -92,9 +73,34 @@ int main()
                 << ansi.pos(CHECK_ROW, CHECK_COL)
                 << (board.turn == Color::White ? "White" : "Black") << " is in check!\n";
         }
+        else {
+            std::cout
+            << ansi.pos(CHECK_ROW, CHECK_COL)
+            << ansi.gr(ansi.BLUE_BACKGROUND)
+            << ansi.ERASE_IN_LINE;
+        }
     }
 
     return 0;
+}
+
+void printmoves(Board board, std::vector<Move> moves)
+{
+    auto r = 2, c = 50;
+
+    for (auto i = 0; i < lastmoves.size(); ++i) {
+        std::cout << ansi.pos(r, c) << ansi.gr(ansi.BLUE_BACKGROUND) << ansi.ERASE_CURSOR_EOL;
+        r++;
+    }
+
+    r = 2, c = 50;
+
+    auto& color = board.turn == Color::White ? ansi.BRIGHT_BLUE_FOREGROUND : ansi.BRIGHT_GREEN_FOREGROUND;
+    for (auto& move : moves) {
+        std::cout << ansi.pos(r, c) << ansi.gr(color) << ansi.gr(ansi.BLACK_BACKGROUND) << move.toString() << " score " << move.score << ansi.gr(std::list<std::string>());
+        r++;
+    }
+    lastmoves = moves;
 }
 
 void drawChessboard(int startY, int startX, int squareWidth, int squareHeight)

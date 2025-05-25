@@ -36,11 +36,17 @@ namespace move_unit_test
     TEST(basicmove_unit_test, move_test)
     {
         Fen f;
+        f.clear();
+
         std::vector<Move> psuedoExpectedMoves;
+        const std::array<PieceType, 5> pieces
+        {
+            PieceType::King, PieceType::Queen, PieceType::Rook, PieceType::Bishop, PieceType::Knight 
+        };
 
         for (auto color : { Color::White, Color::Black }) {
             f.turn = color;
-            for (auto piece : { PieceType::King, PieceType::Queen, PieceType::Rook, PieceType::Bishop, PieceType::Knight }) {
+            for (auto piece : pieces) {
                 auto& offsets = offsetMap[piece];
                 auto single = singleMoveMap[piece];
 
@@ -63,6 +69,7 @@ namespace move_unit_test
     TEST(basicmove_unit_test, move_obsticle_test)
     {
         Fen f;
+        f.clear();
         std::vector<Move> psuedoExpectedMoves;
 
         for (auto color : { Color::White, Color::Black }) {

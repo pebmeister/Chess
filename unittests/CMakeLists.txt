@@ -30,6 +30,8 @@ add_executable(unittest
   fen.cpp
   utils.cpp
   basicMoveTest.cpp
+  king.cpp
+  pawn.cpp
   utils.h
 )
 

@@ -13,6 +13,34 @@
 extern Fen fen;
 extern Zobrist zobrist;
 
+constexpr uint64_t kingAttackMask(int sq)
+{
+    int file = sq % 8;
+    int rank = sq / 8;
+    uint64_t attacks = 0ULL;
+    for (int dr = -1; dr <= 1; ++dr) {
+        for (int df = -1; df <= 1; ++df) {
+            if (dr == 0 && df == 0) continue;
+            int r = rank + dr;
+            int f = file + df;
+            if (r >= 0 && r <= 7 && f >= 0 && f <= 7) {
+                attacks |= 1ULL << (r * 8 + f);
+            }
+        }
+    }
+    return attacks;
+}
+
+constexpr std::array<uint64_t, 64> makeKingAttacks()
+{
+    std::array<uint64_t, 64> arr = {};
+    for (int sq = 0; sq < 64; ++sq)
+        arr[sq] = kingAttackMask(sq);
+    return arr;
+}
+
+constexpr std::array<uint64_t, 64> KING_ATTACKS = makeKingAttacks();
+
 inline static uint64_t knightAttacks(uint64_t knights)
 {
     uint64_t l1 = (knights >> 1) & 0x7f7f7f7f7f7f7f7fULL;
@@ -61,7 +89,6 @@ Board::Board(std::string fen)
     halfMoveClock = 0;
     fullMoveNumber = 1;
     turn = Color::White;
-    initKingAttacks();
     loadFEN(fen);
 }
 
@@ -115,35 +142,7 @@ uint64_t Board::zobristHash() const
     return hash;
 }
 
-static std::array<uint64_t, 64> KING_ATTACKS;
 
-void Board::initKingAttacks()
-{
-    auto kingAttackMask = [](const int& sq)->uint64_t
-    {
-        int file = sq % 8;
-        int rank = sq / 8;
-
-        uint64_t attacks = 0ULL;
-        for (int dr = -1; dr <= 1; ++dr) {
-            for (int df = -1; df <= 1; ++df) {
-                if (dr == 0 && df == 0) continue;
-
-                int r = rank + dr;
-                int f = file + df;
-
-                if (r >= 0 && r <= 7 && f >= 0 && f <= 7) {
-                    attacks |= 1ULL << (r * 8 + f);
-                }
-            }
-        }
-        return attacks;
-    };
-
-    for (int sq = 0; sq < 64; ++sq) {
-        KING_ATTACKS[sq] = kingAttackMask(sq);
-    }
-}
 
 bool Board::isInside(int x, int y) const
 {
@@ -206,6 +205,9 @@ void Board::makeMove(const Move& move)
     int toIndex = move.to.y * 8 + move.to.x;
     uint64_t fromBB = 1ULL << fromIndex;
     uint64_t toBB = 1ULL << toIndex;
+
+    Piece theMovedPiece = get(move.from.x, move.from.y);
+
 
     // Handle captures (including en passant)
     if (move.type == MoveType::EnPassant) {
@@ -511,7 +513,6 @@ std::vector<Move> Board::generateLegalMoves(Color side)
 
 std::vector<Move> Board::generateKingMoves(Color side, bool includeCastling) const
 {
-
     std::vector<Move> moves;
 
     auto indexToSquare = [](int index) -> Square
@@ -567,7 +568,7 @@ std::vector<Move> Board::generateKingMoves(Color side, bool includeCastling) con
         }
     }
 
-    return moves;
+    return moves; 
 }
 
 uint64_t Board::kingAttacks(uint64_t kingBB) const

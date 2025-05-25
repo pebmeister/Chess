@@ -393,6 +393,13 @@ public:
         _enPassantStr = "";
         _halfStr = "";
         _fullStr = "";
+
+        calculateBitBoard();
+
+        whiteKingside = false;
+        whiteQueenside = false;
+        blackKingside = false;
+        blackQueenside = false;
     }
 
     void load(std::string_view fen)

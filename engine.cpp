@@ -8,15 +8,14 @@
 #include "chess.h"
 #include "zobrist.h"
 
-Fen fen;
-Zobrist zobrist;
-
 struct TTEntry {
     int depth;
     int value;
     // Optionally: you can add a flag for exact/alpha/beta, and best move
 };
 
+Fen fen;
+Zobrist zobrist;
 thread_local std::unordered_map<uint64_t, TTEntry> transTable;
 
 Move Engine::findBestMove(Board& board, int depth, std::vector<Move>& moves)
@@ -48,37 +47,6 @@ Move Engine::findBestMove(Board& board, int depth, std::vector<Move>& moves)
         }
     }
     return moveList[bestIndex];
-}
-
-
-Move Engine::findBestMove_Original(Board& board, int depth, std::vector<Move>& moves)
-{
-    std::list<Move> bestMove;
-    int bestValue = std::numeric_limits<int>::min();
-
-    Color currentTurn = board.getTurn(); // Save current turn
-    moves = board.generateLegalMoves(currentTurn);
-
-    for (auto& move : moves) {
-        auto next = board;
-        next.makeMove(move);
-
-        // Pass the opposite color for the next level since we just made a move
-        int eval = minimax(next, depth - 1, std::numeric_limits<int>::min(),
-            std::numeric_limits<int>::max(), currentTurn == Color::Black);
-
-        move.score = eval;
-        if (eval == bestValue) {
-            bestMove.emplace_back(move);
-        }
-        else if (eval > bestValue) {
-            bestValue = eval;
-            bestMove.clear();
-            bestMove.emplace_back(move);
-        }
-    }
-
-    return bestMove.front();
 }
 
 // In engine.cpp or a suitable place
@@ -115,7 +83,6 @@ void Engine::orderMoves(Board& board, std::vector<Move>& moves)
             return a.score > b.score;
         });
 }
-
 
 int Engine::evaluate(const Board& board)
 {
