@@ -78,7 +78,6 @@ private:
     std::vector<Move> generateSlidingMoves(Color side, uint64_t pieces, const std::vector<int>& directions) const;
     void updateAggregateBitboards();
     uint64_t& getPieceBB(PieceType type, Color color);
-    void initKingAttacks();
 
 
 public:

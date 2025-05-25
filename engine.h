@@ -9,7 +9,5 @@ public:
 private:
     int evaluate(const Board& board);
     int minimax(Board& board, int depth, int alpha, int beta, bool maximizingPlayer);
-    Move findBestMove_Original(Board& board, int depth, std::vector<Move>& moves);
     void orderMoves(Board& board, std::vector<Move>& moves);
-
 };

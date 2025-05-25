@@ -39,11 +39,21 @@ Move Engine::findBestMove(Board& board, int depth, std::vector<Move>& moves)
     int bestValue = std::numeric_limits<int>::min();
     int bestIndex = 0;
     for (size_t i = 0; i < futures.size(); ++i) {
-        int eval = futures[i].get();
-        moveList[i].score = eval;
-        if (eval > bestValue) {
-            bestValue = eval;
-            bestIndex = static_cast<int>(i);
+        try {
+            int eval = futures[i].get();
+            moveList[i].score = eval;
+            if (eval > bestValue) {
+                bestValue = eval;
+                bestIndex = static_cast<int>(i);
+            }
+        }
+        catch (const std::exception& ex) {
+            std::cerr << "Exception in async move " << i << ": " << ex.what() << std::endl;
+            moveList[i].score = std::numeric_limits<int>::min(); // or another sentinel value
+        }
+        catch (...) {
+            std::cerr << "Unknown exception in async move " << i << std::endl;
+            moveList[i].score = std::numeric_limits<int>::min();
         }
     }
     return moveList[bestIndex];
@@ -87,16 +97,31 @@ void Engine::orderMoves(Board& board, std::vector<Move>& moves)
 int Engine::evaluate(const Board& board)
 {
     int score = 0;
-    static const int pieceValues[] = { 0, 100, 320, 330, 500, 900, 20000 }; // None, Pawn, Knight, Bishop, Rook, Queen, King
+    static const int pieceValues[] = { 0, 100, 320, 330, 500, 900, 20000 };
+
+    // Center squares: d4, e4, d5, e5
+    const int centerSquares[4][2] = { {3,3}, {3,4}, {4,3}, {4,4} };
+    const int centerBonus = 20; // Tune as desired
 
     for (int y = 0; y < 8; ++y) {
         for (int x = 0; x < 8; ++x) {
-            
-            Piece p = board.get(x, y);            
+            Piece p = board.get(x, y);
             if (p.type == PieceType::None) continue;
-  
+
             int value = pieceValues[static_cast<int>(p.type)];
-            score += (p.color == Color::White) ? value : -value;
+            int pieceScore = (p.color == Color::White) ? value : -value;
+
+            // Center control bonus for pawns and knights
+            if (p.type == PieceType::Pawn || p.type == PieceType::Knight) {
+                for (const auto& sq : centerSquares) {
+                    if (x == sq[0] && y == sq[1]) {
+                        pieceScore += (p.color == Color::White) ? centerBonus : -centerBonus;
+                        break;
+                    }
+                }
+            }
+
+            score += pieceScore;
         }
     }
     return score;
@@ -154,5 +179,4 @@ int Engine::minimax(Board& board, int depth, int alpha, int beta, bool maximizin
     transTable[hash] = { depth, bestValue };
     return bestValue;
 }
-
 

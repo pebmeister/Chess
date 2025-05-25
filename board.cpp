@@ -142,8 +142,6 @@ uint64_t Board::zobristHash() const
     return hash;
 }
 
-
-
 bool Board::isInside(int x, int y) const
 {
     return x >= 0 && x < 8 && y >= 0 && y < 8;
@@ -187,6 +185,14 @@ const Piece Board::get(int x, int y) const
 
 void Board::makeMove(const Move& move)
 {
+    Piece movedPiece = get(move.from.x, move.from.y);
+    if (movedPiece.type == PieceType::None) {
+        std::cerr << "makeMove: No piece at from-square (" << move.from.x << "," << move.from.y << ") for move: "
+            << move.from.toString() << std::endl;
+        std::cerr << "Board state:\n" << toString() << std::endl;
+        throw std::runtime_error("makeMove: No piece at from-square");
+    }
+
     // Save current state for undo
     BoardState state;
     state.move = move;
@@ -205,9 +211,6 @@ void Board::makeMove(const Move& move)
     int toIndex = move.to.y * 8 + move.to.x;
     uint64_t fromBB = 1ULL << fromIndex;
     uint64_t toBB = 1ULL << toIndex;
-
-    Piece theMovedPiece = get(move.from.x, move.from.y);
-
 
     // Handle captures (including en passant)
     if (move.type == MoveType::EnPassant) {
@@ -254,8 +257,6 @@ void Board::makeMove(const Move& move)
     }
 
     // Move the piece
-    Piece movedPiece = get(move.from.x, move.from.y);
-    
     uint64_t& pieceBB = getPieceBB(movedPiece.type, movedPiece.color);
     pieceBB &= ~fromBB;
 
@@ -532,38 +533,60 @@ std::vector<Move> Board::generateKingMoves(Color side, bool includeCastling) con
         int toIndex = std::countr_zero(bb);
         Square from = indexToSquare(kingIndex);
         Square to = indexToSquare(toIndex);
-        moves.emplace_back(from, to);
+
+        Piece target = get(toIndex % 8, toIndex / 8);
+        if (target.type != PieceType::None && target.color != side) {
+            moves.emplace_back(from, to, MoveType::Capture);
+        }
+        else {
+            moves.emplace_back(from, to);
+        }
     }
 
     if (!includeCastling)
         return moves;
 
+
     // Castling
     if (side == Color::White) {
-        if (whiteKingside) {
-            if ((allPieces & 0x0000000000000060ULL) == 0 && !isSquareAttacked({ 4, 0 }, Color::Black) &&
-                !isSquareAttacked({ 5, 0 }, Color::Black) && !isSquareAttacked({ 6, 0 }, Color::Black)) {
-                moves.emplace_back(Square{ 4, 0 }, Square{ 6, 0 }, MoveType::Castle);
+        Piece king = get(4, 0);
+        if (whiteKingside && king.type == PieceType::King && king.color == Color::White) {
+            Piece rook = get(7, 0);
+            if (rook.type == PieceType::Rook) {
+                if ((allPieces & 0x0000000000000060ULL) == 0 && !isSquareAttacked({ 4, 0 }, Color::Black) &&
+                    !isSquareAttacked({ 5, 0 }, Color::Black) && !isSquareAttacked({ 6, 0 }, Color::Black)) {
+                    moves.emplace_back(Square{ 4, 0 }, Square{ 6, 0 }, MoveType::Castle);
+                }
             }
         }
-        if (whiteQueenside) {
-            if ((allPieces & 0x000000000000000EULL) == 0 && !isSquareAttacked({ 4, 0 }, Color::Black) &&
-                !isSquareAttacked({ 3, 0 }, Color::Black) && !isSquareAttacked({ 2, 0 }, Color::Black)) {
-                moves.emplace_back(Square{ 4, 0 }, Square{ 2, 0 }, MoveType::Castle);
+        if (whiteQueenside && king.type == PieceType::King && king.color == Color::White) {
+            Piece rook = get(0, 0);
+            if (rook.type == PieceType::Rook) {
+                if ((allPieces & 0x000000000000000EULL) == 0 && !isSquareAttacked({ 4, 0 }, Color::Black) &&
+                    !isSquareAttacked({ 3, 0 }, Color::Black) && !isSquareAttacked({ 2, 0 }, Color::Black)) {
+                    moves.emplace_back(Square{ 4, 0 }, Square{ 2, 0 }, MoveType::Castle);
+                }
             }
         }
     }
     else {
-        if (blackKingside) {
-            if ((allPieces & 0x6000000000000000ULL) == 0 && !isSquareAttacked({ 4, 7 }, Color::White) &&
-                !isSquareAttacked({ 5, 7 }, Color::White) && !isSquareAttacked({ 6, 7 }, Color::White)) {
-                moves.emplace_back(Square{ 4, 7 }, Square{ 6, 7 }, MoveType::Castle);
+        Piece king = get(4, 7);
+        if (blackKingside && king.type == PieceType::King && king.color == Color::Black) {
+            Piece rook = get(7, 7);
+            if (rook.type == PieceType::Rook) {
+                if ((allPieces & 0x6000000000000000ULL) == 0 && !isSquareAttacked({ 4, 7 }, Color::White) &&
+                    !isSquareAttacked({ 5, 7 }, Color::White) && !isSquareAttacked({ 6, 7 }, Color::White)) {
+                    moves.emplace_back(Square{ 4, 7 }, Square{ 6, 7 }, MoveType::Castle);
+                }
             }
         }
-        if (blackQueenside) {
-            if ((allPieces & 0x0E00000000000000ULL) == 0 && !isSquareAttacked({ 4, 7 }, Color::White) &&
-                !isSquareAttacked({ 3, 7 }, Color::White) && !isSquareAttacked({ 2, 7 }, Color::White)) {
-                moves.emplace_back(Square{ 4, 7 }, Square{ 2, 7 }, MoveType::Castle);
+        if (blackQueenside && king.type == PieceType::King && king.color == Color::Black) {
+            Piece rook = get(0, 7);
+            if (rook.type == PieceType::Rook) {
+                if ((allPieces & 0x0E00000000000000ULL) == 0 && !isSquareAttacked({ 4, 7 }, Color::White) &&
+                    !isSquareAttacked({ 3, 7 }, Color::White) && !isSquareAttacked({ 2, 7 }, Color::White)) {
+                    moves.emplace_back(Square{ 4, 7 }, Square{ 2, 7 }, MoveType::Castle);
+                }
             }
         }
     }
@@ -633,7 +656,13 @@ std::vector<Move> Board::generateSlidingMoves(Color side, uint64_t pieces, const
                 uint64_t toBB = 1ULL << square;
                 if (ownPieces & toBB) break;
                 Move m{ indexToSquare(from), indexToSquare(square) };
-                moves.emplace_back(m);
+                if (opponentPieces & toBB) {
+                    moves.emplace_back(indexToSquare(from), indexToSquare(square), MoveType::Capture);
+                    break;
+                }
+                else {
+                    moves.emplace_back(indexToSquare(from), indexToSquare(square));
+                }
                 if (opponentPieces & toBB) break;
 
                 square += delta;
@@ -686,7 +715,15 @@ std::vector<Move> Board::generateWhiteKnightMoves() const
 
         for (uint64_t bb = targets; bb; bb &= bb - 1) {
             int toIndex = std::countr_zero(bb);
-            moves.emplace_back(indexToSquare(fromIndex), indexToSquare(toIndex));
+
+            Piece target = get(toIndex % 8, toIndex / 8);
+            if (target.type != PieceType::None && target.color != Color::White) {
+                moves.emplace_back(indexToSquare(fromIndex), indexToSquare(toIndex), MoveType::Capture);
+            }
+            else {
+                moves.emplace_back(indexToSquare(fromIndex), indexToSquare(toIndex));
+            }
+
         }
     }
 
@@ -710,7 +747,14 @@ std::vector<Move> Board::generateBlackKnightMoves() const
 
         for (uint64_t bb = targets; bb; bb &= bb - 1) {
             int toIndex = std::countr_zero(bb);
-            moves.emplace_back(indexToSquare(fromIndex), indexToSquare(toIndex));
+
+            Piece target = get(toIndex % 8, toIndex / 8);
+            if (target.type != PieceType::None && target.color != Color::Black) {
+                moves.emplace_back(indexToSquare(fromIndex), indexToSquare(toIndex), MoveType::Capture);
+            }
+            else {
+                moves.emplace_back(indexToSquare(fromIndex), indexToSquare(toIndex));
+            }
         }
     }
 
@@ -783,7 +827,7 @@ std::vector<Move> Board::generatePawnMoves(Color side) const
             moves.emplace_back(fromSq, toSq, MoveType::Promotion, PieceType::Queen);
         }
         else {
-            moves.emplace_back(fromSq, toSq);
+            moves.emplace_back(fromSq, toSq, MoveType::Capture);
         }
     }
 
