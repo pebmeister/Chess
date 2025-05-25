@@ -4,6 +4,8 @@
 #include <assert.h>
 #include <future>
 #include <vector>
+#include <unordered_map>
+
 #include "engine.h"
 #include "chess.h"
 #include "zobrist.h"
