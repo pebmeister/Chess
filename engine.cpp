@@ -1,4 +1,5 @@
 // engine.cpp
+#include <algorithm>
 #include <limits>
 #include <iostream>
 #include <assert.h>
