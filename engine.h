@@ -5,9 +5,9 @@
 class Engine {
 public:
     Move findBestMove(Board& board, int depth, std::vector<Move>& moves);
+    int64_t evaluate(const Board& board);
 
 private:
-    int evaluate(const Board& board);
-    int minimax(Board& board, int depth, int alpha, int beta, bool maximizingPlayer);
+    int64_t minimax(Board& board, int depth, int64_t alpha, int64_t beta, bool maximizingPlayer);
     void orderMoves(Board& board, std::vector<Move>& moves);
 };

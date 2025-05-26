@@ -5,7 +5,7 @@
 #include "chess.h"
 #include "fen.h"
 
-void print_board(const Board& b, int row, int col, int squareWidth, int squareHeight);
+void draw_pieces(const Board& b, int row, int col, int squareWidth, int squareHeight);
 void drawChessboard(int startY, int startX, int squareWidth, int squareHeight);
 void print_moves(const Board& board, const std::vector<Move>& moves, int startRow, int startCol);
 void print_status(const Board& board, int msgRow, int msgCol, int checkRow, int checkCol, const std::string& extra = "");
@@ -20,8 +20,8 @@ int main()
     constexpr int MSG_ROW = 31, MSG_COL = 11;
     constexpr int MOVES_ROW = 2, MOVES_COL = 50;
     constexpr int SQUARE_W = 4, SQUARE_H = 2;
-    constexpr int white_level = 4;
-    constexpr int black_level = 5;
+    constexpr int white_level = 3;
+    constexpr int black_level = 3;
 
     Board board;
     Engine engine;
@@ -32,11 +32,11 @@ int main()
         << ansi.ERASE_ALL_DISPLAY << ansi.HOME << ansi.HIDE_CURSOR;
 
     drawChessboard(BOARD_ROW, BOARD_COL, SQUARE_W, SQUARE_H);
-    print_board(board, BOARD_ROW, BOARD_COL, SQUARE_W, SQUARE_H);
+    draw_pieces(board, BOARD_ROW, BOARD_COL, SQUARE_W, SQUARE_H);
 
     bool end = false;
     std::vector<Move> moves;
-
+    board.turn = Color::Black;
     for (int moveCount = 0; !end; ++moveCount) {
         auto level = board.turn == Color::White ? white_level : black_level;
         auto move = engine.findBestMove(board, level, moves);
@@ -49,10 +49,10 @@ int main()
         }
 
         print_status(board, MSG_ROW, MSG_COL, CHECK_ROW, CHECK_COL,
-            (board.turn == Color::White ? "White" : "Black") + std::string(" ") + move.toString());
+            (board.turn == Color::White ? "White" : "Black") + std::string(" ") + move.toString() + " " + std::to_string(move.score));
 
         board.makeMove(move);
-        print_board(board, BOARD_ROW, BOARD_COL, SQUARE_W, SQUARE_H);
+        draw_pieces(board, BOARD_ROW, BOARD_COL, SQUARE_W, SQUARE_H);
 
         if (board.isCheckmate(board.turn)) {
             print_status(board, MSG_ROW, MSG_COL, CHECK_ROW, CHECK_COL,
@@ -62,9 +62,6 @@ int main()
         else if (board.isInCheck(board.turn)) {
             print_status(board, MSG_ROW, MSG_COL, CHECK_ROW, CHECK_COL,
                 (board.turn == Color::White ? "White" : "Black") + std::string(" is in check!"));
-        }
-        else {
-            print_status(board, MSG_ROW, MSG_COL, CHECK_ROW, CHECK_COL);
         }
     }
 
@@ -79,7 +76,6 @@ void print_status(const Board& board, int msgRow, int msgCol, int checkRow, int 
     if (!extra.empty())
         std::cout << extra;
 
-    std::cout << ansi.pos(checkRow, checkCol) << ansi.gr(ansi.BLUE_BACKGROUND) << ansi.ERASE_IN_LINE;
 }
 
 void print_moves(const Board& board, const std::vector<Move>& moves, int startRow, int startCol)
@@ -93,10 +89,12 @@ void print_moves(const Board& board, const std::vector<Move>& moves, int startRo
     r = startRow;
     auto& color = board.turn == Color::White ? ansi.BRIGHT_BLUE_FOREGROUND : ansi.BRIGHT_GREEN_FOREGROUND;
     for (const auto& move : moves) {
-        std::cout << ansi.pos(r++, c)
-            << ansi.gr(color) << ansi.gr(ansi.BLACK_BACKGROUND)
-            << move.toString() << " score " << move.score
-            << ansi.gr(std::list<std::string>());
+        if (move.score != 0 || r == startRow) {
+            std::cout << ansi.pos(r++, c)
+                << ansi.gr(color) << ansi.gr(ansi.BLACK_BACKGROUND)
+                << move.toString() << " score " << move.score
+                << ansi.gr(std::list<std::string>());
+        }
     }
     lastmoves = moves;
 }
@@ -159,7 +157,7 @@ void drawChessboard(int startY, int startX, int squareWidth, int squareHeight)
     std::cout << reset << std::endl;
 }
 
-void print_board(const Board& b, int row, int col, int squareWidth, int squareHeight)
+void draw_pieces(const Board& b, int row, int col, int squareWidth, int squareHeight)
 {
     bool iswhitesquare = true;
     for (int y = 7; y >= 0; --y) {

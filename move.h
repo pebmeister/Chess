@@ -38,7 +38,7 @@ public:
     Square to;
     MoveType type = MoveType::Normal;
     PieceType promotionType = PieceType::None;
-    int score = 0;
+    int64_t score = 0;
 
     Move(Square f, Square t, MoveType mt = MoveType::Normal, PieceType pt = PieceType::None)
         : from(f), to(t), type(mt), promotionType(pt)
